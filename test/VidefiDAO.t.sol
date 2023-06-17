@@ -48,7 +48,7 @@ contract VidefiDAOTest is Test {
         console.log("Stake of bob: ", videfiDao.balanceOf(bob));
 
         // 3. Reward is distributed to the contract for 100 REW
-        _updateRewardIndex(10 * 1e18);
+        _updateRewardIndex(100 * 1e18);
 
         // 4. Alice should be able to claim reward for 10/(10 + 100) * 100 = 10 / 110 * 100 = 9.09
         _claim(alice);

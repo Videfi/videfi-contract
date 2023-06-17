@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IVidefiDAO.sol";
 
 contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
-
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
@@ -34,7 +33,8 @@ contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
         address _beneficiary,
         bool _isDAOBeneficiary,
         address[] memory _tokenGates,
-        uint256[] memory _tokenGateAmounts
+        uint256[] memory _tokenGateAmounts,
+        address to
     ) ERC721(_contentName, _contentSymbol) {
         allTokenURI = _tokenURI;
         limitAmount = _limitAmount;
@@ -44,11 +44,18 @@ contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
         isDAOBeneficiary = _isDAOBeneficiary;
 
         if (_isDAOBeneficiary) {
-            require(address(_paymentToken) == IVidefiDAO(_beneficiary).rewardToken(), "Payment token mismatch");
+            require(
+                address(_paymentToken) ==
+                    IVidefiDAO(_beneficiary).rewardToken(),
+                "Payment token mismatch"
+            );
         }
 
-        uint256 id = _safeMint(msg.sender);
-        require(_tokenGates.length == _tokenGateAmounts.length, "Token gate length mismatch");
+        uint256 id = _safeMint(to);
+        require(
+            _tokenGates.length == _tokenGateAmounts.length,
+            "Token gate length mismatch"
+        );
         for (uint256 i = 0; i < _tokenGates.length; i++) {
             accessControl[id][_tokenGates[i]] = _tokenGateAmounts[i];
         }
@@ -58,24 +65,16 @@ contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
         }
     }
 
-    function safeMint() public returns (uint256) {
-        if (isDAOBeneficiary) { 
+    function safeMint(address to) public returns (uint256) {
+        if (isDAOBeneficiary) {
             paymentToken.approve(beneficiary, mintPrice);
-            paymentToken.transferFrom(
-                msg.sender,
-                address(this),
-                mintPrice
-            );
+            paymentToken.transferFrom(to, address(this), mintPrice);
             IVidefiDAO(beneficiary).updateRewardIndex(mintPrice);
         } else {
-            paymentToken.transferFrom(
-                msg.sender,
-                beneficiary,
-                mintPrice
-            );
+            paymentToken.transferFrom(to, beneficiary, mintPrice);
         }
 
-        return _safeMint(msg.sender);
+        return _safeMint(to);
     }
 
     function _safeMint(address to) private returns (uint256) {
@@ -86,7 +85,11 @@ contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
         return tokenId;
     }
 
-    function isAccessible(address viewer, uint256 tokenId, address tokenGate) external view returns (bool) {
+    function isAccessible(
+        address viewer,
+        uint256 tokenId,
+        address tokenGate
+    ) external view returns (bool) {
         // Not protected content is always viewable
         if (!contentProtected[tokenId]) return true;
         // Owner is always be able to view
@@ -112,7 +115,12 @@ contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+    )
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC721URIStorage)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 

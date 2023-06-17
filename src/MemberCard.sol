@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IVidefiDAO.sol";
 
 contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
-
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
@@ -42,32 +41,28 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
         isDAOBeneficiary = _isDAOBeneficiary;
 
         if (_isDAOBeneficiary) {
-            require(address(_paymentToken) == IVidefiDAO(_beneficiary).rewardToken(), "Payment token mismatch");
+            require(
+                address(_paymentToken) ==
+                    IVidefiDAO(_beneficiary).rewardToken(),
+                "Payment token mismatch"
+            );
         }
     }
 
-    function safeMint() external returns (uint256) {
+    function safeMint(address to) external returns (uint256) {
         require(totalSupply() < limitAmount, "Card limit reached");
 
-        if (isDAOBeneficiary) { 
+        if (isDAOBeneficiary) {
             paymentToken.approve(beneficiary, mintPrice);
-            paymentToken.transferFrom(
-                msg.sender,
-                address(this),
-                mintPrice
-            );
+            paymentToken.transferFrom(to, address(this), mintPrice);
             IVidefiDAO(beneficiary).updateRewardIndex(mintPrice);
         } else {
-            paymentToken.transferFrom(
-                msg.sender,
-                beneficiary,
-                mintPrice
-            );
+            paymentToken.transferFrom(to, beneficiary, mintPrice);
         }
 
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(msg.sender, tokenId);
+        _safeMint(to, tokenId);
 
         if (duration != type(uint).max)
             cardExpiry[tokenId] = block.timestamp + duration;
@@ -93,7 +88,9 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
     }
 
     // Override balance of functionality
-    function balanceOf(address owner) override(ERC721, IERC721) public view returns (uint256 balance) {
+    function balanceOf(
+        address owner
+    ) public view override(ERC721, IERC721) returns (uint256 balance) {
         uint256 allTokensBalances = super.balanceOf(owner);
         uint256 validCount = 0;
         for (uint256 i = 0; i < allTokensBalances; i++) {
@@ -109,7 +106,12 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
     // The following functions are overrides required by Solidity.
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+    )
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC721URIStorage)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 

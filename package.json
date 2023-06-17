@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2"
+  },
+  "devDependencies": {
+    "@typechain/ethers-v6": "^0.4.0"
   }
 }

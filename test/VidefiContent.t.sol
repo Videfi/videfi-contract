@@ -64,7 +64,8 @@ contract VidefiContentTest is Test, IERC721Receiver {
             address(this),
             false,
             unlimitedContentTokenGates,
-            unlimitedContentTokenGateAmounts
+            unlimitedContentTokenGateAmounts,
+            address(this)
         );
 
         address[] memory limitedContentTokenGates = new address[](1);
@@ -83,7 +84,8 @@ contract VidefiContentTest is Test, IERC721Receiver {
             address(videfiDao),
             true,
             limitedContentTokenGates,
-            limitedContentTokenGateAmounts
+            limitedContentTokenGateAmounts,
+            address(this)
         );
     }
 
@@ -110,14 +112,14 @@ contract VidefiContentTest is Test, IERC721Receiver {
     function _mint(VidefiContent content, address minter) private {
         vm.startPrank(minter);
         rewardToken.approve(address(content), type(uint).max);
-        content.safeMint();
+        content.safeMint(minter);
         vm.stopPrank();
     }
 
     function _mintMemberCard(MemberCard memberCard, address minter) private {
         vm.startPrank(minter);
         rewardToken.approve(address(memberCard), type(uint).max);
-        memberCard.safeMint();
+        memberCard.safeMint(minter);
         vm.stopPrank();
     }
 
@@ -170,7 +172,7 @@ contract VidefiContentTest is Test, IERC721Receiver {
         vm.startPrank(alice);
         rewardToken.approve(address(limitedContent), type(uint).max);
         vm.expectRevert("Content limit reached");
-        limitedContent.safeMint();
+        limitedContent.safeMint(alice);
         vm.stopPrank();
     }
 

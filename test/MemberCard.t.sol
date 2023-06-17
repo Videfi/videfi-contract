@@ -74,7 +74,7 @@ contract MemberCardTest is Test {
     function _mint(MemberCard memberCard, address minter) private {
         vm.startPrank(minter);
         rewardToken.approve(address(memberCard), type(uint).max);
-        memberCard.safeMint();
+        memberCard.safeMint(minter);
         vm.stopPrank();
     }
 
@@ -127,7 +127,7 @@ contract MemberCardTest is Test {
         vm.startPrank(alice);
         rewardToken.approve(address(goldMemberCard), type(uint).max);
         vm.expectRevert("Card limit reached");
-        goldMemberCard.safeMint();
+        goldMemberCard.safeMint(alice);
         vm.stopPrank();
     }
 
