@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IVidefiDAO.sol";
 
-contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
+contract VidefiContent is ERC721, ERC721Enumerable, ERC721URIStorage {
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
@@ -20,21 +20,23 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
     address public beneficiary;
     bool public isDAOBeneficiary;
 
-    mapping(uint256 => uint256) public cardExpiry;
+    // token_id => card_address => card_amount
+    mapping(uint256 => mapping(address => uint256)) accessControl;
+    mapping(uint256 => bool) contentProtected;
 
     constructor(
-        string memory _cardName,
-        string memory _cardSymbol,
+        string memory _contentName,
+        string memory _contentSymbol,
         string memory _tokenURI,
-        uint256 _duration,
         uint256 _limitAmount,
         IERC20 _paymentToken,
         uint256 _mintPrice,
         address _beneficiary,
-        bool _isDAOBeneficiary
-    ) ERC721(_cardName, _cardSymbol) {
+        bool _isDAOBeneficiary,
+        address[] memory _tokenGates,
+        uint256[] memory _tokenGateAmounts
+    ) ERC721(_contentName, _contentSymbol) {
         allTokenURI = _tokenURI;
-        duration = _duration;
         limitAmount = _limitAmount;
         paymentToken = _paymentToken;
         mintPrice = _mintPrice;
@@ -44,11 +46,19 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
         if (_isDAOBeneficiary) {
             require(address(_paymentToken) == IVidefiDAO(_beneficiary).rewardToken(), "Payment token mismatch");
         }
+
+        uint256 id = _safeMint(msg.sender);
+        require(_tokenGates.length == _tokenGateAmounts.length, "Token gate length mismatch");
+        for (uint256 i = 0; i < _tokenGates.length; i++) {
+            accessControl[id][_tokenGates[i]] = _tokenGateAmounts[i];
+        }
+
+        if (_tokenGates.length > 0) {
+            contentProtected[id] = true;
+        }
     }
 
-    function safeMint() external returns (uint256) {
-        require(totalSupply() < limitAmount, "Card limit reached");
-
+    function safeMint() public returns (uint256) {
         if (isDAOBeneficiary) { 
             paymentToken.approve(beneficiary, mintPrice);
             paymentToken.transferFrom(
@@ -65,16 +75,32 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
             );
         }
 
+        return _safeMint(msg.sender);
+    }
+
+    function _safeMint(address to) private returns (uint256) {
+        require(totalSupply() < limitAmount, "Content limit reached");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(msg.sender, tokenId);
-
-        if (duration != type(uint).max)
-            cardExpiry[tokenId] = block.timestamp + duration;
-
+        super._safeMint(to, tokenId);
         return tokenId;
     }
 
+    function isAccessible(address viewer, uint256 tokenId, address tokenGate) external view returns (bool) {
+        // Not protected content is always viewable
+        if (!contentProtected[tokenId]) return true;
+        // Owner is always be able to view
+        if (ownerOf(tokenId) == viewer) return true;
+
+        uint256 tokenGateAmount = accessControl[tokenId][tokenGate];
+        // The provided tokenGate is not in the list
+        if (tokenGateAmount == 0) return false;
+
+        // Check whether the viewer has sufficient token gates
+        return IERC721(tokenGate).balanceOf(viewer) >= tokenGateAmount;
+    }
+
+    // The following functions are overrides required by Solidity.
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -84,29 +110,6 @@ contract MemberCard is ERC721, ERC721Enumerable, ERC721URIStorage {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function isCardValid(uint256 cardId) public view returns (bool) {
-        return cardExpiry[cardId] > block.timestamp;
-    }
-
-    function getCardExpiry(uint256 cardId) external view returns (uint256) {
-        return cardExpiry[cardId];
-    }
-
-    // Override balance of functionality
-    function balanceOf(address owner) override(ERC721, IERC721) public view returns (uint256 balance) {
-        uint256 allTokensBalances = super.balanceOf(owner);
-        uint256 validCount = 0;
-        for (uint256 i = 0; i < allTokensBalances; i++) {
-            uint256 tokenId = tokenOfOwnerByIndex(owner, i);
-            bool isValid = isCardValid(tokenId);
-            if (isValid) {
-                validCount++;
-            }
-        }
-        return validCount;
-    }
-
-    // The following functions are overrides required by Solidity.
     function supportsInterface(
         bytes4 interfaceId
     ) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {

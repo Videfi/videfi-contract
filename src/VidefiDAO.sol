@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract VidefiDAO {
-    IERC20 public immutable stakingToken;
+    string public name;
+    string public image;
+
+    IERC20 public immutable governanceToken;
     IERC20 public immutable rewardToken;
 
     mapping(address => uint256) public balanceOf;
@@ -13,8 +18,10 @@ contract VidefiDAO {
     mapping(address => uint256) private rewardIndexOf;
     mapping(address => uint256) private earned;
 
-    constructor(address _stakingToken, address _rewardToken) {
-        stakingToken = IERC20(_stakingToken);
+    constructor(string memory _name, string memory _image, address _governanceToken, address _rewardToken) {
+        name = _name;
+        image = _image;
+        governanceToken = IERC20(_governanceToken);
         rewardToken = IERC20(_rewardToken);
     }
 
@@ -43,7 +50,7 @@ contract VidefiDAO {
         balanceOf[msg.sender] += amount;
         totalSupply += amount;
 
-        stakingToken.transferFrom(msg.sender, address(this), amount);
+        governanceToken.transferFrom(msg.sender, address(this), amount);
     }
 
     function unstake(uint256 amount) external {
@@ -52,7 +59,7 @@ contract VidefiDAO {
         balanceOf[msg.sender] -= amount;
         totalSupply -= amount;
 
-        stakingToken.transfer(msg.sender, amount);
+        governanceToken.transfer(msg.sender, amount);
     }
 
     function claim() external returns (uint256) {
@@ -66,21 +73,4 @@ contract VidefiDAO {
 
         return reward;
     }
-}
-
-interface IERC20 {
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
