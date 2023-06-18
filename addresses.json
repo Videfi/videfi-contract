@@ -5,5 +5,12 @@
         "VidefiContentDeployer": "0x60edA798a0503d81CCB2ACA7b2A098e1892e759d",
         "MemberCardDeployer": "0x919a82b146fdE7415285bFf66826Aee8b608a963",
         "VidefiDAODeployer": "0x45CA83F3baF5221410422e615D8FF55c3E86c823"
+    },
+    "goerli": {
+        "APE": "0x3f2BC6D45306aEa1d11327e93f0d8879b5dF08ec",
+        "USDT": "0x2d2da8809eC403136c851d402FB94255326c28F3",
+        "VidefiContentDeployer": "0xBa5503F86e2E1bB51fF1D72131Ad20539cABF913",
+        "MemberCardDeployer": "0xe28Aa446a9774Ba4f775CA61589D80BE85896691",
+        "VidefiDAODeployer": "0x38076a8b076474256eE90ECDa0AbB79a998300F5"
     }
 }
